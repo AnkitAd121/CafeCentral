@@ -1,115 +1,142 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { cafes } from "@/data/cafes";
-import { useTheme } from "@/context/ThemeContext";
 import CafeCard from "@/components/CafeCard";
-import { Button } from "@/components/ui/button";
-import { Coffee, Sun, CloudRain, ArrowRight } from "lucide-react";
+import { Coffee, Sun, CloudRain, Search, ArrowRight } from "lucide-react";
+
+const neighborhoods = [...new Set(cafes.map((c) => c.neighborhood))];
 
 export default function Home() {
-  const { night, toggle } = useTheme();
-  const goldenHourCafes = cafes.filter((c) => c.goldenHour).slice(0, 3);
-  const monsoonCafes = cafes.filter((c) => c.monsoonMode).slice(0, 3);
+  const navigate = useNavigate();
+  const [query, setQuery] = useState("");
+
+  const goToSearch = (e) => {
+    e.preventDefault();
+    navigate(query.trim() ? `/directory?q=${encodeURIComponent(query.trim())}` : "/directory");
+  };
 
   return (
-    <div className="pt-16">
-      {/* HERO */}
-      <section className="min-h-[90vh] flex items-center transition-colors duration-1000 relative overflow-hidden">
-        <div
-          className="absolute inset-0 -z-10 transition-colors duration-1000"
-          style={{
-            background: night
-              ? "linear-gradient(180deg, hsl(25 20% 6%) 0%, hsl(25 20% 8%) 100%)"
-              : "linear-gradient(180deg, hsl(36 40% 92%) 0%, hsl(36 33% 97%) 55%)",
-          }}
-        />
-        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-24">
-          <span className="fade-up inline-flex items-center gap-2 text-sm px-4 py-1.5 rounded-full bg-card border border-warmborder text-muted-foreground">
-            <Coffee className="h-3.5 w-3.5 text-primary" /> Guwahati's curated cafe guide
+    <div className="bg-background">
+      {/* ===== DARK HERO (top) ===== */}
+      <section className="bg-espresso text-cream rounded-b-[2.5rem] sm:rounded-b-[3.5rem] px-5 sm:px-8 pt-28 pb-20 sm:pb-28">
+        <div className="max-w-5xl mx-auto">
+          <span className="fade-up inline-flex items-center gap-2 text-sm px-4 py-1.5 rounded-full bg-cream/10 border border-cream/15 text-cream/80">
+            <Coffee className="h-3.5 w-3.5 text-amber" /> Guwahati's curated cafe guide
           </span>
 
-          <h1 className="fade-up delay-100 mt-7 text-4xl sm:text-5xl lg:text-7xl font-semibold leading-[1.05] tracking-tight max-w-3xl">
+          <h1 className="fade-up delay-100 mt-7 text-4xl sm:text-5xl lg:text-7xl font-semibold leading-[1.04] tracking-tight max-w-3xl text-cream">
             Find your perfect{" "}
-            <span className="text-primary italic">third place</span>
+            <span className="text-amber italic">third place</span>
           </h1>
 
-          <p className="fade-up delay-200 mt-7 text-base sm:text-lg text-foreground/80 max-w-2xl leading-relaxed">
+          <p className="fade-up delay-200 mt-6 text-base sm:text-lg text-cream/70 max-w-2xl leading-relaxed">
             A carefully curated guide to Guwahati's most atmospheric, functional, and
             soulful cafes — filtered for how you actually feel right now.
           </p>
 
-          <div className="fade-up delay-300 mt-9 flex flex-col sm:flex-row gap-3">
-            <Link to="/directory">
-              <Button
-                data-testid="hero-explore-btn"
-                className="rounded-full px-7 h-12 text-base bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
+          {/* Search panel */}
+          <div className="fade-up delay-300 mt-10 rounded-[1.75rem] bg-cream/[0.06] border border-cream/10 p-3 sm:p-4">
+            <form onSubmit={goToSearch} className="relative">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-cream/40" />
+              <input
+                data-testid="home-search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by name or vibe (e.g. Minimalist, Riverside)…"
+                className="w-full h-14 pl-14 pr-5 rounded-2xl bg-cream/[0.04] text-cream placeholder:text-cream/40 border border-cream/10 focus:ring-2 focus:ring-amber/40 focus:outline-none text-base"
+              />
+            </form>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                to="/directory"
+                data-testid="home-neighborhood-all"
+                className="px-5 py-2.5 rounded-full text-sm font-medium bg-amber text-espresso hover:bg-amber/90 transition-colors duration-300"
               >
-                Explore all cafes <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Button
-              data-testid="hero-ambiance-toggle"
-              onClick={toggle}
-              variant="outline"
-              className="rounded-full px-7 h-12 text-base border-warmborder hover:border-primary w-full sm:w-auto"
-            >
-              {night ? <Sun className="h-4 w-4" /> : <CloudRain className="h-4 w-4" />}
-              {night ? "Switch to Day" : "Switch to Night"}
-            </Button>
+                All
+              </Link>
+              {neighborhoods.map((n) => (
+                <Link
+                  key={n}
+                  to={`/directory?neighborhood=${encodeURIComponent(n)}`}
+                  data-testid={`home-neighborhood-${n.toLowerCase().replace(/\s+/g, "-")}`}
+                  className="px-5 py-2.5 rounded-full text-sm font-medium border border-cream/15 text-cream/80 hover:border-amber hover:text-cream transition-colors duration-300"
+                >
+                  {n}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* GOLDEN HOUR */}
-      <section className="py-20 sm:py-24 px-5 sm:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-end justify-between gap-4 mb-10">
+      {/* ===== LIGHT BEIGE BODY ===== */}
+      {/* Golden Hour + Monsoon Mode */}
+      <section className="px-5 sm:px-8 -mt-6 sm:-mt-8 relative z-10">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
+          <Link
+            to="/directory?filter=goldenHour"
+            data-testid="golden-hour-card"
+            className="fade-up group rounded-[1.5rem] bg-card border border-warmborder p-7 sm:p-8 flex items-start justify-between gap-4 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_24px_60px_-24px_rgba(40,24,12,0.35)]"
+          >
             <div>
-              <span className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-amber font-medium">
-                <Sun className="h-4 w-4" /> Golden Hour
+              <span className="text-xs font-semibold tracking-[0.18em] uppercase text-amber">
+                Golden Hour
+              </span>
+              <h2 className="font-serif text-2xl sm:text-3xl font-semibold mt-3">Best for Sunsets</h2>
+              <p className="text-sm text-muted-foreground mt-2">
+                Rooftops, river views & that warm amber glow.
+              </p>
+            </div>
+            <span className="h-12 w-12 shrink-0 rounded-full bg-amber/15 flex items-center justify-center text-amber transition-transform duration-500 group-hover:rotate-12">
+              <Sun className="h-5 w-5" />
+            </span>
+          </Link>
+
+          <Link
+            to="/directory?filter=monsoonMode"
+            data-testid="monsoon-card"
+            className="fade-up delay-100 group rounded-[1.5rem] bg-card border border-warmborder p-7 sm:p-8 flex items-start justify-between gap-4 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_24px_60px_-24px_rgba(40,24,12,0.35)]"
+          >
+            <div>
+              <span className="text-xs font-semibold tracking-[0.18em] uppercase text-blue-400">
+                Monsoon Mode
+              </span>
+              <h2 className="font-serif text-2xl sm:text-3xl font-semibold mt-3">Cozy &amp; Enclosed</h2>
+              <p className="text-sm text-muted-foreground mt-2">
+                Snug, covered corners for Guwahati's rainy days.
+              </p>
+            </div>
+            <span className="h-12 w-12 shrink-0 rounded-full bg-blue-400/15 flex items-center justify-center text-blue-400 transition-transform duration-500 group-hover:-translate-y-0.5">
+              <CloudRain className="h-5 w-5" />
+            </span>
+          </Link>
+        </div>
+      </section>
+
+      {/* The Collection */}
+      <section className="px-5 sm:px-8 py-20 sm:py-28">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-end justify-between gap-4 mb-12">
+            <div>
+              <span className="text-xs uppercase tracking-[0.18em] text-primary font-semibold">
+                The Collection
               </span>
               <h2 className="font-serif text-3xl sm:text-4xl font-semibold mt-2">
-                Best for sunset views
+                Every cafe, hand-picked
               </h2>
             </div>
             <Link
               to="/directory"
-              data-testid="golden-hour-see-all"
+              data-testid="collection-see-all"
               className="text-sm text-primary hover:underline shrink-0 flex items-center gap-1"
             >
               See all <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
-            {goldenHourCafes.map((c) => (
-              <CafeCard key={c.id} cafe={c} enableHover />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* MONSOON MODE */}
-      <section className="py-20 sm:py-24 px-5 sm:px-8 bg-muted/50 dark:bg-[hsl(25_18%_9%)] transition-colors duration-500">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-end justify-between gap-4 mb-10">
-            <div>
-              <span className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-blue-400 font-medium">
-                <CloudRain className="h-4 w-4" /> Monsoon Mode
-              </span>
-              <h2 className="font-serif text-3xl sm:text-4xl font-semibold mt-2">
-                Cozy rainy-day picks
-              </h2>
-            </div>
-            <Link
-              to="/directory"
-              data-testid="monsoon-see-all"
-              className="text-sm text-primary hover:underline shrink-0 flex items-center gap-1"
-            >
-              See all <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
-            {monsoonCafes.map((c) => (
-              <CafeCard key={c.id} cafe={c} enableHover />
+            {cafes.map((c) => (
+              <CafeCard key={c.id} cafe={c} />
             ))}
           </div>
         </div>

@@ -3,6 +3,7 @@ export const cafes = [
   {
     id: "dyu-art-cafe",
     name: "Dyu Art Cafe",
+    vibe: "Art & Calm",
     tagline: "Where canvases breathe and coffee blooms beneath a mango tree.",
     neighborhood: "Koramangala",
     address: "2nd Cross, Koramangala 5th Block, Guwahati, Assam 781005",
@@ -38,6 +39,7 @@ export const cafes = [
   {
     id: "the-daily-grind",
     name: "The Daily Grind",
+    vibe: "Bold & Buzzy",
     tagline: "Twelve seats, one obsession: the perfect shot of espresso.",
     neighborhood: "Paltan Bazaar",
     address: "MG Road, Paltan Bazaar, Guwahati, Assam 781008",
@@ -73,6 +75,7 @@ export const cafes = [
   {
     id: "pages-and-pour",
     name: "Pages & Pour",
+    vibe: "Bookish & Quiet",
     tagline: "A riverside reading room that happens to pour exceptional coffee.",
     neighborhood: "Uzan Bazaar",
     address: "Riverfront Lane, Uzan Bazaar, Guwahati, Assam 781001",
@@ -108,6 +111,7 @@ export const cafes = [
   {
     id: "highland-brew",
     name: "Highland Brew",
+    vibe: "Local & Warm",
     tagline: "A love letter to the Northeast, served one ingredient at a time.",
     neighborhood: "Christian Basti",
     address: "GS Road, Christian Basti, Guwahati, Assam 781005",
@@ -143,6 +147,7 @@ export const cafes = [
   {
     id: "rooftop-ritual",
     name: "Rooftop Ritual",
+    vibe: "Scenic & Social",
     tagline: "Opens at three, lives for the sunset over the Brahmaputra.",
     neighborhood: "Fancy Bazaar",
     address: "HB Road, Fancy Bazaar, Guwahati, Assam 781001",
@@ -178,6 +183,7 @@ export const cafes = [
   {
     id: "the-quiet-cup",
     name: "The Quiet Cup",
+    vibe: "Hushed & Focused",
     tagline: "Guwahati's only enforced-quiet cafe. No calls. Just coffee.",
     neighborhood: "Zoo Road",
     address: "Zoo Road Tiniali, Guwahati, Assam 781024",
