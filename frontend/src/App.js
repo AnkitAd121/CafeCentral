@@ -12,6 +12,7 @@ import CafeDetail from "@/pages/CafeDetail";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Community from "@/pages/Community";
+import Events from "@/pages/Events";
 
 function AppRouter() {
   const location = useLocation();
@@ -30,6 +31,7 @@ function AppRouter() {
         <Route path="/cafe/:id" element={<CafeDetail />} />
         <Route path="/login" element={<Login />} />
         <Route path="/community" element={<Community />} />
+        <Route path="/events" element={<Events />} />
         <Route
           path="/dashboard"
           element={

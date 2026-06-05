@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { cafes } from "@/data/cafes";
 import CafeCard from "@/components/CafeCard";
+import SurpriseMe from "@/components/SurpriseMe";
+import FeaturedCafe from "@/components/FeaturedCafe";
 import { Coffee, Sun, CloudRain, Search, ArrowRight } from "lucide-react";
 
 const neighborhoods = [...new Set(cafes.map((c) => c.neighborhood))];
@@ -67,6 +69,11 @@ export default function Home() {
               ))}
             </div>
           </div>
+
+          {/* Random cafe picker */}
+          <div className="fade-up delay-300 mt-5">
+            <SurpriseMe />
+          </div>
         </div>
       </section>
 
@@ -113,6 +120,8 @@ export default function Home() {
           </Link>
         </div>
       </section>
+
+      <FeaturedCafe />
 
       {/* The Collection */}
       <section className="px-5 sm:px-8 py-20 sm:py-28">

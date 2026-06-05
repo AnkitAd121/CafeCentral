@@ -225,6 +225,24 @@ async def create_review(input: ReviewInput, request: Request):
     return review
 
 
+# ---------------- Events notify ----------------
+class EventNotifyInput(BaseModel):
+    email: str
+
+
+@api_router.post("/events/notify")
+async def events_notify(input: EventNotifyInput):
+    email = input.email.strip().lower()
+    if "@" not in email or "." not in email:
+        raise HTTPException(status_code=400, detail="Invalid email")
+    await db.event_signups.update_one(
+        {"email": email},
+        {"$setOnInsert": {"email": email, "created_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True,
+    )
+    return {"ok": True}
+
+
 # ---------------- Seed mock reviews ----------------
 MOCK_REVIEWS = [
     {

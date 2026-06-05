@@ -27,6 +27,7 @@ export default function Navbar() {
 
   const links = [
     { to: "/directory", label: "Directory" },
+    { to: "/events", label: "Events" },
     { to: "/community", label: "Community" },
   ];
   if (user) links.push({ to: "/dashboard", label: "Dashboard" });
