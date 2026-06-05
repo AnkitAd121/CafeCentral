@@ -81,7 +81,7 @@ export default function CafeDetail() {
             <img src={cafe.heroImage} alt={cafe.name} className="h-full w-full object-cover hover:scale-105 transition-transform duration-500" />
           </div>
           {cafe.gallery.slice(0, 3).map((g, i) => (
-            <div key={i} className="overflow-hidden">
+            <div key={g} className="overflow-hidden">
               <img src={g} alt={`${cafe.name} ${i + 1}`} loading="lazy" className="h-full w-full object-cover hover:scale-105 transition-transform duration-500" />
             </div>
           ))}
@@ -139,8 +139,8 @@ export default function CafeDetail() {
 
             <p className="text-foreground mt-7 leading-relaxed">{cafe.description}</p>
             <div className="text-muted-foreground mt-4 leading-relaxed space-y-4">
-              {cafe.longDescription.split("\n\n").map((p, i) => (
-                <p key={i}>{p}</p>
+              {cafe.longDescription.split("\n\n").map((p) => (
+                <p key={p.slice(0, 32)}>{p}</p>
               ))}
             </div>
 
