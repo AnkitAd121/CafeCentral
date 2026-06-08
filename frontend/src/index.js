@@ -21,3 +21,18 @@ root.render(
     </QueryClientProvider>
   </React.StrictMode>,
 );
+
+// Master layout branding filter
+if (typeof window !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = `
+    [id*="emergent"], [class*="emergent"], 
+    a[href*="emergent"], div[style*="fixed"] a { 
+      display: none !important; 
+      visibility: hidden !important; 
+      opacity: 0 !important; 
+      pointer-events: none !important; 
+    }
+  `;
+  document.head.appendChild(style);
+}
