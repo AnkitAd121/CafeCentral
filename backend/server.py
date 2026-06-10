@@ -15,7 +15,6 @@ import requests as http_requests
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
@@ -93,16 +92,13 @@ app.add_middleware(RegexCORSMiddleware)
 class GoogleAuthInput(BaseModel):
     access_token: str
 
-
 class SaveCafeInput(BaseModel):
     cafe_id: str
-
 
 class ReviewInput(BaseModel):
     cafe_id: str
     rating: int
     text: str
-
 
 class Review(BaseModel):
     id: str
@@ -116,11 +112,13 @@ class Review(BaseModel):
 
 # ---------------- Auth helpers ----------------
 async def get_current_user(request: Request) -> dict:
-    token = request.cookies.get("session_token")
+    token = None
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        token = auth[7:]
+    # Cookie fallback (for backwards compat)
     if not token:
-        auth = request.headers.get("Authorization", "")
-        if auth.startswith("Bearer "):
-            token = auth[7:]
+        token = request.cookies.get("session_token")
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
@@ -150,7 +148,7 @@ async def root():
 
 @api_router.post("/auth/google")
 async def auth_google(input: GoogleAuthInput, response: Response):
-    """Verify Google access token via userinfo endpoint, upsert user, create session."""
+    """Verify Google access token, upsert user, create session."""
     try:
         userinfo_resp = http_requests.get(
             "https://www.googleapis.com/oauth2/v3/userinfo",
@@ -191,7 +189,7 @@ async def auth_google(input: GoogleAuthInput, response: Response):
             "created_at": datetime.now(timezone.utc).isoformat(),
         })
 
-    # Create session
+    # Create session token
     session_token = uuid.uuid4().hex
     expires_at = datetime.now(timezone.utc) + timedelta(days=SESSION_DAYS)
     await db.user_sessions.insert_one({
@@ -201,17 +199,14 @@ async def auth_google(input: GoogleAuthInput, response: Response):
         "created_at": datetime.now(timezone.utc).isoformat(),
     })
 
-    response.set_cookie(
-        key="session_token",
-        value=session_token,
-        httponly=True,
-        secure=True,
-        samesite="none",
-        path="/",
-        max_age=SESSION_DAYS * 24 * 60 * 60,
-    )
-
-    return {"user_id": user_id, "email": email, "name": name, "picture": picture}
+    # Return token in body so frontend can store in localStorage
+    return {
+        "user_id": user_id,
+        "email": email,
+        "name": name,
+        "picture": picture,
+        "session_token": session_token,
+    }
 
 
 @api_router.get("/auth/me")
@@ -227,11 +222,12 @@ async def auth_me(request: Request):
 
 @api_router.post("/auth/logout")
 async def auth_logout(request: Request, response: Response):
-    token = request.cookies.get("session_token")
+    token = None
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        token = auth[7:]
     if not token:
-        auth = request.headers.get("Authorization", "")
-        if auth.startswith("Bearer "):
-            token = auth[7:]
+        token = request.cookies.get("session_token")
     if token:
         await db.user_sessions.delete_one({"session_token": token})
     response.delete_cookie("session_token", path="/", samesite="none", secure=True)
