@@ -1,10 +1,9 @@
 import "@/App.css";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { Toaster } from "@/components/ui/sonner";
 import Navbar from "@/components/Navbar";
-import AuthCallback from "@/components/AuthCallback";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Home from "@/pages/Home";
 import Directory from "@/pages/Directory";
@@ -15,13 +14,6 @@ import Community from "@/pages/Community";
 import Events from "@/pages/Events";
 
 function AppRouter() {
-  const location = useLocation();
-
-  // Process OAuth callback FIRST (synchronously) before any route/auth check.
-  if (location.hash?.includes("session_id=")) {
-    return <AuthCallback />;
-  }
-
   return (
     <>
       <Navbar />
