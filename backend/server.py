@@ -1,16 +1,15 @@
 from fastapi import FastAPI, APIRouter, Request, Response, HTTPException, Header
 from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
-import requests
 from pathlib import Path
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
 import re
+import requests as http_requests
 
 
 ROOT_DIR = Path(__file__).parent
@@ -21,28 +20,26 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '882647879694-5ot12g2al7l1lf84mf7pbcoeegsg2anr.apps.googleusercontent.com')
+SESSION_DAYS = 7
+
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
-EMERGENT_SESSION_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
-SESSION_DAYS = 7
-
 
 # ---------------- CORS ----------------
-# Allows: production domain, all Vercel preview deploys, localhost dev
 ALLOWED_ORIGIN_PATTERNS = [
-    r"^https://cafe-central-[a-z0-9-]+-ankit-ad-s-projects\.vercel\.app$",  # all preview URLs
-    r"^https://cafe-central-tawny\.vercel\.app$",                            # production Vercel
-    r"^https://cafecentral\.in$",                                             # custom domain
-    r"^https://www\.cafecentral\.in$",                                        # custom domain www
-    r"^http://localhost:\d+$",                                                # local dev any port
+    r"^https://cafe-central-[a-z0-9-]+-ankit-ad-s-projects\.vercel\.app$",
+    r"^https://cafe-central-tawny\.vercel\.app$",
+    r"^https://cafecentral\.in$",
+    r"^https://www\.cafecentral\.in$",
+    r"^http://localhost:\d+$",
 ]
 
 def is_allowed_origin(origin: str) -> bool:
     return any(re.match(p, origin) for p in ALLOWED_ORIGIN_PATTERNS)
 
 
-# Custom CORS middleware to support regex origin matching
 from starlette.types import ASGIApp, Receive, Scope, Send
 from starlette.datastructures import Headers
 from starlette.responses import Response as StarletteResponse
@@ -70,7 +67,6 @@ class RegexCORSMiddleware:
                     message["headers"] = headers_list
                 await send(message)
 
-            # Handle preflight OPTIONS requests immediately
             if scope["method"] == "OPTIONS" and origin and is_allowed_origin(origin):
                 response = StarletteResponse(
                     status_code=204,
@@ -94,11 +90,8 @@ app.add_middleware(RegexCORSMiddleware)
 
 
 # ---------------- Models ----------------
-class User(BaseModel):
-    user_id: str
-    email: str
-    name: str
-    picture: Optional[str] = None
+class GoogleAuthInput(BaseModel):
+    access_token: str
 
 
 class SaveCafeInput(BaseModel):
@@ -123,7 +116,6 @@ class Review(BaseModel):
 
 # ---------------- Auth helpers ----------------
 async def get_current_user(request: Request) -> dict:
-    """Resolve user from session_token cookie first, then Authorization header."""
     token = request.cookies.get("session_token")
     if not token:
         auth = request.headers.get("Authorization", "")
@@ -156,24 +148,32 @@ async def root():
     return {"message": "CafeCentral API"}
 
 
-@api_router.post("/auth/session")
-async def auth_session(response: Response, x_session_id: str = Header(None)):
-    if not x_session_id:
-        raise HTTPException(status_code=400, detail="Missing session id")
-
+@api_router.post("/auth/google")
+async def auth_google(input: GoogleAuthInput, response: Response):
+    """Verify Google access token via userinfo endpoint, upsert user, create session."""
     try:
-        resp = requests.get(EMERGENT_SESSION_URL, headers={"X-Session-ID": x_session_id}, timeout=15)
-    except Exception:
-        raise HTTPException(status_code=502, detail="Auth provider unreachable")
-    if resp.status_code != 200:
-        raise HTTPException(status_code=401, detail="Invalid session id")
+        userinfo_resp = http_requests.get(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {input.access_token}"},
+            timeout=10,
+        )
+        if userinfo_resp.status_code != 200:
+            raise HTTPException(status_code=401, detail="Invalid Google token")
 
-    data = resp.json()
-    email = data["email"]
-    name = data.get("name", email.split("@")[0])
-    picture = data.get("picture")
-    session_token = data["session_token"]
+        userinfo = userinfo_resp.json()
+        email = userinfo.get("email")
+        name = userinfo.get("name", email.split("@")[0] if email else "User")
+        picture = userinfo.get("picture")
 
+        if not email:
+            raise HTTPException(status_code=401, detail="No email in Google token")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Token verification failed: {str(e)}")
+
+    # Upsert user
     existing = await db.users.find_one({"email": email}, {"_id": 0})
     if existing:
         user_id = existing["user_id"]
@@ -191,6 +191,8 @@ async def auth_session(response: Response, x_session_id: str = Header(None)):
             "created_at": datetime.now(timezone.utc).isoformat(),
         })
 
+    # Create session
+    session_token = uuid.uuid4().hex
     expires_at = datetime.now(timezone.utc) + timedelta(days=SESSION_DAYS)
     await db.user_sessions.insert_one({
         "user_id": user_id,
