@@ -2,7 +2,6 @@ import { createContext, useContext, useEffect, useState, useCallback, useMemo } 
 import { api } from "@/lib/api";
 
 const AuthContext = createContext(null);
-
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
@@ -21,19 +20,38 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    // CRITICAL: If returning from OAuth callback, skip the /me check.
-    // AuthCallback will exchange the session_id and establish the session first.
-    if (window.location.hash?.includes("session_id=")) {
-      setLoading(false);
-      return;
-    }
     checkAuth();
   }, [checkAuth]);
 
-  // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
   const login = useCallback(() => {
-    const redirectUrl = window.location.origin + "/dashboard";
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+    return new Promise((resolve, reject) => {
+      if (!window.google) {
+        reject(new Error("Google Identity Services not loaded"));
+        return;
+      }
+
+      const client = window.google.accounts.oauth2.initTokenClient({
+        client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID,
+        scope: "openid email profile",
+        callback: async (tokenResponse) => {
+          if (tokenResponse.error) {
+            reject(new Error(tokenResponse.error));
+            return;
+          }
+          try {
+            const res = await api.post("/auth/google", {
+              access_token: tokenResponse.access_token,
+            });
+            setUser(res.data);
+            resolve(res.data);
+          } catch (e) {
+            reject(e);
+          }
+        },
+      });
+
+      client.requestAccessToken({ prompt: "select_account" });
+    });
   }, []);
 
   const logout = useCallback(async () => {
@@ -43,6 +61,10 @@ export const AuthProvider = ({ children }) => {
       console.error("Logout failed:", error);
     }
     setUser(null);
+    // Revoke Google token so user gets account picker next login
+    if (window.google) {
+      window.google.accounts.oauth2.revoke("", () => {});
+    }
   }, []);
 
   const value = useMemo(
