@@ -1,41 +1,23 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Coffee } from "lucide-react";
 
-// REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+// With Google GIS popup flow, there is no redirect callback page needed.
+// This component exists as a safe fallback — if someone lands on /auth/callback,
+// redirect them to dashboard if logged in, or login if not.
 export default function AuthCallback() {
   const navigate = useNavigate();
-  const { setUser } = useAuth();
-  const hasProcessed = useRef(false);
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    if (hasProcessed.current) return;
-    hasProcessed.current = true;
-
-    const hash = window.location.hash || "";
-    const match = hash.match(/session_id=([^&]+)/);
-    const sessionId = match ? match[1] : null;
-
-    const run = async () => {
-      if (!sessionId) {
-        navigate("/login", { replace: true });
-        return;
-      }
-      try {
-        const res = await api.post("/auth/session", null, {
-          headers: { "X-Session-ID": sessionId },
-        });
-        setUser(res.data);
-        window.history.replaceState(null, "", window.location.pathname);
-        navigate("/dashboard", { replace: true, state: { user: res.data } });
-      } catch (e) {
-        navigate("/login", { replace: true });
-      }
-    };
-    run();
-  }, [navigate, setUser]);
+    if (loading) return;
+    if (user) {
+      navigate("/dashboard", { replace: true });
+    } else {
+      navigate("/login", { replace: true });
+    }
+  }, [user, loading, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background">
