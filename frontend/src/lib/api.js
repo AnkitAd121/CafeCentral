@@ -5,5 +5,14 @@ export const API = `${BACKEND_URL}/api`;
 
 export const api = axios.create({
   baseURL: API,
-  withCredentials: true,
+  withCredentials: false,
+});
+
+// Attach session token from localStorage to every request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("cc_session_token");
+  if (token) {
+    config.headers["Authorization"] = `Bearer ${token}`;
+  }
+  return config;
 });
