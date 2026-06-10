@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
+import re
 
 
 ROOT_DIR = Path(__file__).parent
@@ -25,6 +26,71 @@ api_router = APIRouter(prefix="/api")
 
 EMERGENT_SESSION_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
 SESSION_DAYS = 7
+
+
+# ---------------- CORS ----------------
+# Allows: production domain, all Vercel preview deploys, localhost dev
+ALLOWED_ORIGIN_PATTERNS = [
+    r"^https://cafe-central-[a-z0-9-]+-ankit-ad-s-projects\.vercel\.app$",  # all preview URLs
+    r"^https://cafe-central-tawny\.vercel\.app$",                            # production Vercel
+    r"^https://cafecentral\.in$",                                             # custom domain
+    r"^https://www\.cafecentral\.in$",                                        # custom domain www
+    r"^http://localhost:\d+$",                                                # local dev any port
+]
+
+def is_allowed_origin(origin: str) -> bool:
+    return any(re.match(p, origin) for p in ALLOWED_ORIGIN_PATTERNS)
+
+
+# Custom CORS middleware to support regex origin matching
+from starlette.types import ASGIApp, Receive, Scope, Send
+from starlette.datastructures import Headers
+from starlette.responses import Response as StarletteResponse
+
+class RegexCORSMiddleware:
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+        if scope["type"] == "http":
+            headers = Headers(scope=scope)
+            origin = headers.get("origin", "")
+
+            async def send_with_cors(message):
+                if message["type"] == "http.response.start" and origin and is_allowed_origin(origin):
+                    headers_list = list(message.get("headers", []))
+                    headers_list += [
+                        (b"access-control-allow-origin", origin.encode()),
+                        (b"access-control-allow-credentials", b"true"),
+                        (b"access-control-allow-methods", b"GET, POST, PUT, DELETE, OPTIONS, PATCH"),
+                        (b"access-control-allow-headers", b"*"),
+                        (b"vary", b"Origin"),
+                    ]
+                    message = dict(message)
+                    message["headers"] = headers_list
+                await send(message)
+
+            # Handle preflight OPTIONS requests immediately
+            if scope["method"] == "OPTIONS" and origin and is_allowed_origin(origin):
+                response = StarletteResponse(
+                    status_code=204,
+                    headers={
+                        "Access-Control-Allow-Origin": origin,
+                        "Access-Control-Allow-Credentials": "true",
+                        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+                        "Access-Control-Allow-Headers": "*",
+                        "Vary": "Origin",
+                    },
+                )
+                await response(scope, receive, send)
+                return
+
+            await self.app(scope, receive, send_with_cors)
+        else:
+            await self.app(scope, receive, send)
+
+
+app.add_middleware(RegexCORSMiddleware)
 
 
 # ---------------- Models ----------------
@@ -292,20 +358,6 @@ async def seed_reviews():
 
 app.include_router(api_router)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=[
-        "https://cafe-central-tawny.vercel.app",
-        "https://cafe-central-bifjv8gs8-ankit-ad-s-projects.vercel.app",
-        "https://cafecentral.in",
-        "https://www.cafecentral.in",
-        "http://localhost:3000",
-    ],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -316,6 +368,7 @@ logger = logging.getLogger(__name__)
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
