@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -7,10 +7,28 @@ import { Coffee } from "lucide-react";
 export default function Login() {
   const { user, login, loading } = useAuth();
   const navigate = useNavigate();
+  const [signingIn, setSigningIn] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!loading && user) navigate("/dashboard", { replace: true });
   }, [user, loading, navigate]);
+
+  const handleLogin = async () => {
+    setError(null);
+    setSigningIn(true);
+    try {
+      await login();
+      navigate("/dashboard", { replace: true });
+    } catch (e) {
+      // User closed the popup — don't show an error
+      if (e?.message !== "popup_closed_by_user" && e?.message !== "access_denied") {
+        setError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setSigningIn(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-5 pt-16">
@@ -25,14 +43,18 @@ export default function Login() {
             reviews with Guwahati's cafe community.
           </p>
 
+          {error && (
+            <p className="mt-4 text-sm text-red-500">{error}</p>
+          )}
+
           <Button
             data-testid="google-signin-btn"
-            onClick={login}
+            onClick={handleLogin}
+            disabled={signingIn}
             className="w-full mt-8 h-12 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-base"
           >
-            Continue with Google
+            {signingIn ? "Signing in…" : "Continue with Google"}
           </Button>
-
           <p className="text-xs text-muted-foreground mt-5 font-serif italic">
             One quiet tap, and your coffee corner remembers you.
           </p>
