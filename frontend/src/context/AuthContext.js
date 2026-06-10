@@ -9,10 +9,16 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const checkAuth = useCallback(async () => {
+    const token = localStorage.getItem("cc_session_token");
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     try {
       const res = await api.get("/auth/me");
       setUser(res.data);
     } catch (e) {
+      localStorage.removeItem("cc_session_token");
       setUser(null);
     } finally {
       setLoading(false);
@@ -42,6 +48,8 @@ export const AuthProvider = ({ children }) => {
             const res = await api.post("/auth/google", {
               access_token: tokenResponse.access_token,
             });
+            // Store session token in localStorage
+            localStorage.setItem("cc_session_token", res.data.session_token);
             setUser(res.data);
             resolve(res.data);
           } catch (e) {
@@ -60,8 +68,8 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error("Logout failed:", error);
     }
+    localStorage.removeItem("cc_session_token");
     setUser(null);
-    // Revoke Google token so user gets account picker next login
     if (window.google) {
       window.google.accounts.oauth2.revoke("", () => {});
     }
