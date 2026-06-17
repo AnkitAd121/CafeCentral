@@ -220,4 +220,3 @@ export const cafes = [
 
 export const getCafeById = (id) => cafes.find((c) => c.id === id);
 
-// pipeline check: 2026-06-17T10:09Z
