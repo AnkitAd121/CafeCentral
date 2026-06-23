@@ -39,7 +39,7 @@ export default function Navbar() {
           <span className="h-9 w-9 rounded-full bg-primary flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
             <Coffee className="h-5 w-5 text-primary-foreground" />
           </span>
-          <span className="font-serif text-xl font-semibold tracking-tight">CafeCentral</span>
+          <span className="font-serif text-xl font-semibold tracking-tight">Guwahati Central</span>
         </Link>
 
         {/* Desktop */}
