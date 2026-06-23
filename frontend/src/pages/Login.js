@@ -37,7 +37,7 @@ export default function Login() {
           <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center mx-auto">
             <Coffee className="h-7 w-7 text-primary-foreground" />
           </div>
-          <h1 className="font-serif text-3xl font-semibold mt-6">Welcome to CafeCentral</h1>
+          <h1 className="font-serif text-3xl font-semibold mt-6">Welcome to Guwahati Central</h1>
           <p className="text-muted-foreground mt-3 leading-relaxed">
             Sign in to save your favourite third places, build your vault, and share
             reviews with Guwahati's cafe community.
