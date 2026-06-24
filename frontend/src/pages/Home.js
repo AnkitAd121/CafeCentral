@@ -158,7 +158,7 @@ export default function Home() {
             <span className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
               <Coffee className="h-4 w-4 text-primary-foreground" />
             </span>
-            <span className="font-serif text-lg font-semibold">Guwahati Central</span>
+            <span className="font-serif text-lg font-semibold"> Central</span>
           </Link>
           <p className="text-sm text-muted-foreground font-serif italic">
             A love letter to Guwahati's cafe culture. Made with care.
